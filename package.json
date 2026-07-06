@@ -1,0 +1,26 @@
+{
+  "name": "ahimsa-backend",
+  "version": "1.0.0",
+  "description": "Ahimsa Wellness Centre — Booking & Operations API (MongoDB · Firebase Auth · Razorpay)",
+  "type": "module",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "seed": "node src/seed.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jose": "^5.9.6",
+    "mongoose": "^8.7.0",
+    "morgan": "^1.10.0",
+    "nanoid": "^5.0.7",
+    "pdfkit": "^0.15.0",
+    "razorpay": "^2.9.4"
+  }
+}

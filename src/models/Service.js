@@ -1,0 +1,20 @@
+import mongoose from 'mongoose';
+
+const serviceSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, trim: true },
+    category: { type: String, required: true, trim: true },
+    blurb: { type: String, default: '' },
+    priceInPaise: { type: Number, required: true, min: 0 },
+    durationMin: { type: Number, required: true, min: 5 },
+    capacity: { type: Number, required: true, min: 1 },
+    capacityUnit: { type: String, default: 'spots' },
+    therapistId: { type: mongoose.Schema.Types.ObjectId, ref: 'Staff' },
+    therapistName: { type: String, default: '' },
+    room: { type: String, default: '' },
+    active: { type: Boolean, default: true },
+  },
+  { timestamps: true }
+);
+
+export default mongoose.model('Service', serviceSchema);

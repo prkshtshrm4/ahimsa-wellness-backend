@@ -45,7 +45,7 @@ export async function createBooking(req, res) {
     if (missing.length) throw ApiError.validation(missing);
 
     const service = await Service.findById(serviceId);
-    if (!service || !service.active) throw ApiError.notFound('Service not found.');
+    if (!service || !service.active || service.packageOnly) throw ApiError.notFound('Service not found.');
 
     if (service.kind === 'package' && req.auth?.type !== 'patient') throw ApiError.unauthenticated('Please sign in to purchase a package and manage its visits.');
 
@@ -81,6 +81,7 @@ export async function createBooking(req, res) {
         kind: service.kind || 'service',
         visitCount: service.visitCount || 1,
         inclusions: service.inclusions || [],
+        includedServices: service.includedServices || [],
         name: service.name,
         durationMin: service.durationMin,
         priceInPaise: service.priceInPaise,

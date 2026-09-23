@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import Service from '../src/models/Service.js';
 import Booking from '../src/models/Booking.js';
-import { serializeService } from '../src/routes/services.js';
+import { serializeService, listServices, serviceAvailability } from '../src/routes/services.js';
 import { createPackageHandlers, validatePackage } from '../src/services/packageService.js';
 import { createPackageVisitHandlers, packageRemaining, validateVisitDate } from '../src/services/packageVisits.js';
 import bookingRoutes, { createBooking } from '../src/routes/bookings.js';
@@ -14,6 +14,7 @@ import { cancelBooking } from '../src/routes/me.js';
 import { requireModule, requirePatient } from '../src/middleware/auth.js';
 import { asyncHandler, errorHandler } from '../src/middleware/error.js';
 
+import { createService, updateService, deleteService } from '../src/routes/admin.js';
 let mongo;
 const patientId = new mongoose.Types.ObjectId();
 const otherPatientId = new mongoose.Types.ObjectId();
@@ -36,6 +37,11 @@ app.get('/me/packages/:id/availability', requirePatient, asyncHandler(visits.ava
 app.post('/me/packages/:id/visits', requirePatient, asyncHandler(visits.book));
 app.post('/me/bookings/:id/cancel', requirePatient, asyncHandler(cancelBooking));
 app.post('/bookings', asyncHandler(createBooking));
+app.get('/services', asyncHandler(listServices));
+app.get('/services/:serviceId/availability', asyncHandler(serviceAvailability));
+app.post('/admin/services', requireModule('services.manage'), asyncHandler(createService));
+app.patch('/admin/services/:id', requireModule('services.manage'), asyncHandler(updateService));
+app.delete('/admin/services/:id', requireModule('services.manage'), asyncHandler(deleteService));
 app.use(bookingRoutes);
 app.use(errorHandler);
 const admin = method => method.set('x-test-role', 'admin');
@@ -143,4 +149,42 @@ test('an unrelated payment order cannot activate a package', async () => {
   const { booking } = await purchase({ paid: false });
   await request(app).post(`/bookings/${booking._id}/payment/verify`).send({ razorpayOrderId: 'unrelated', razorpayPaymentId: 'unrelated', razorpaySignature: 'test' }).expect(402);
   assert.equal((await Booking.findById(booking._id)).amounts.balanceInPaise, 100000);
+});
+
+
+test('package-only services are selectable by admins but cannot be individually booked', async () => {
+  const created = await admin(request(app).post('/admin/services')).send({ name: 'Included yoga', category: 'Yoga', priceInPaise: 0, durationMin: 30, capacity: 3, packageOnly: true }).expect(201);
+  const id = created.body.service._id;
+  assert.equal((await request(app).get('/services')).body.services.length, 0);
+  assert.equal((await request(app).get('/services?includeInactive=true')).body.services.length, 0);
+  assert.equal((await admin(request(app).get('/services?includeInactive=true'))).body.services[0].packageOnly, true);
+  await request(app).get(`/services/${id}/availability?date=2035-01-01`).expect(404);
+  await patient(request(app).post('/bookings')).send({ serviceId: id, date: '2035-01-01', startTime: '09:00', paymentMode: 'atVisit' }).expect(404);
+  const result = await admin(request(app).post('/admin/packages')).send({ ...payload, inclusions: [], serviceIds: [id] }).expect(201);
+  assert.equal(result.body.package.includedServices[0].name, 'Included yoga');
+  await admin(request(app).delete(`/admin/services/${id}`)).expect(409);
+  await admin(request(app).patch(`/admin/services/${id}`)).send({ active: false }).expect(200);
+  await admin(request(app).patch(`/admin/packages/${result.body.package._id}`)).send({ serviceIds: [id], name: 'Retained inclusion' }).expect(200);
+  await admin(request(app).post('/admin/packages')).send({ ...payload, serviceIds: [id] }).expect(422);
+});
+
+test('package membership rejects malformed, duplicate, missing and nested package IDs', async () => {
+  const service = await Service.create({ ...payload, kind: 'service', category: 'Yoga' });
+  const pkg = await Service.create({ ...payload, kind: 'package', category: 'Plans' });
+  for (const serviceIds of [['bad'], [service.id, service.id], [new mongoose.Types.ObjectId().toString()], [pkg.id], 'bad']) {
+    await admin(request(app).post('/admin/packages')).send({ ...payload, serviceIds }).expect(422);
+  }
+});
+
+test('purchase and included visits retain selected services after catalogue edits', async () => {
+  const service = await Service.create({ ...payload, kind: 'service', category: 'Yoga', name: 'Original yoga' });
+  const pkg = await admin(request(app).post('/admin/packages')).send({ ...payload, inclusions: [], serviceIds: [service.id] }).expect(201);
+  const first = await patient(request(app).post('/bookings')).send({ serviceId: pkg.body.package._id, date: '2035-01-01', startTime: '09:00', paymentMode: 'atVisit', patientDetails: { name: 'Patient', phone: '+919999999999' } }).expect(201);
+  await Booking.updateOne({ _id: first.body.booking._id }, { $set: { status: 'confirmed', 'amounts.balanceInPaise': 0, 'amounts.paidInPaise': payload.priceInPaise } });
+  await Service.updateOne({ _id: service._id }, { $set: { name: 'Renamed yoga' } });
+  await admin(request(app).patch(`/admin/packages/${pkg.body.package._id}`)).send({ serviceIds: [], inclusions: ['Different care'] }).expect(200);
+  const next = await patient(request(app).post(`/me/packages/${first.body.booking._id}/visits`)).send({ date: '2035-01-02', startTime: '09:00' }).expect(201);
+  const stored = await Booking.findById(next.body.booking._id);
+  assert.equal(stored.serviceSnapshot.includedServices[0].name, 'Original yoga');
+  assert.equal(String(stored.serviceSnapshot.includedServices[0].serviceId), service.id);
 });

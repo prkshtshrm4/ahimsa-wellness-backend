@@ -28,6 +28,7 @@ const bookingSchema = new mongoose.Schema(
       kind: String,
       visitCount: { type: Number, default: 1 },
       inclusions: [String],
+      includedServices: [{ _id: false, serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service' }, name: String, durationMin: Number }],
       name: String,
       durationMin: Number,
       priceInPaise: Number,

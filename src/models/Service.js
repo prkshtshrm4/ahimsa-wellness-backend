@@ -4,6 +4,8 @@ const serviceSchema = new mongoose.Schema(
   {
     kind: { type: String, enum: ['service', 'package'], default: 'service', index: true },
     visitCount: { type: Number, default: 1, min: 1, max: 365 },
+    packageOnly: { type: Boolean, default: false },
+    includedServices: [{ _id: false, serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service' }, name: String, durationMin: Number }],
     inclusions: { type: [String], default: [] },
     name: { type: String, required: true, trim: true },
     category: { type: String, required: true, trim: true },

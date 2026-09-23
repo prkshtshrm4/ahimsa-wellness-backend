@@ -115,7 +115,7 @@ router.post(
 
     if (!serviceId || !date || !startTime) throw ApiError.validation(['serviceId', 'date', 'startTime']);
     const service = await Service.findById(serviceId);
-    if (!service || !service.active) throw ApiError.notFound('Service not found.');
+    if (!service || !service.active || service.packageOnly) throw ApiError.notFound('Service not found.');
 
     if (service.kind === 'package') validateVisitDate(service, date, startTime);
 
@@ -159,6 +159,7 @@ router.post(
         kind: service.kind || 'service',
         visitCount: service.visitCount || 1,
         inclusions: service.inclusions || [],
+        includedServices: service.includedServices || [],
         name: service.name,
         durationMin: service.durationMin,
         priceInPaise: service.priceInPaise,
@@ -279,49 +280,21 @@ router.post(
   '/admin/services',
   authenticate(),
   requireModule('services.manage'),
-  asyncHandler(async (req, res) => {
-    const b = req.body || {};
-    if (!b.name || !(b.priceInPaise > 0) || !(b.capacity > 0)) {
-      throw ApiError.validation(['name', 'priceInPaise', 'capacity']);
-    }
-    b.therapistName = await upsertServiceTherapistName(b);
-    const service = await Service.create({ ...b, kind: 'service', inclusions: [] });
-    res.status(201).json({ service: serializeService(service) });
-  })
+  asyncHandler(createService)
 );
 
 router.patch(
   '/admin/services/:id',
   authenticate(),
   requireModule('services.manage'),
-  asyncHandler(async (req, res) => {
-    const b = req.body || {};
-    if (b.therapistId) b.therapistName = await upsertServiceTherapistName(b);
-    delete b.kind;
-    delete b.inclusions;
-    const service = await Service.findOneAndUpdate({ _id: req.params.id, kind: { $ne: 'package' } }, { $set: b }, { new: true, runValidators: true });
-    if (!service) throw ApiError.notFound('Service not found.');
-    res.json({ service: serializeService(service) });
-  })
+  asyncHandler(updateService)
 );
 
 router.delete(
   '/admin/services/:id',
   authenticate(),
   requireModule('services.manage'),
-  asyncHandler(async (req, res) => {
-    const futureRef = await Booking.exists({
-      serviceId: req.params.id,
-      status: { $in: CAPACITY_STATUSES },
-      date: { $gte: new Date().toISOString().slice(0, 10) },
-    });
-    if (futureRef) {
-      throw ApiError.conflict('service_in_use', 'Future bookings reference this service — deactivate it instead.');
-    }
-    const del = await Service.findOneAndDelete({ _id: req.params.id, kind: { $ne: 'package' } });
-    if (!del) throw ApiError.notFound('Service not found.');
-    res.json({ deleted: true });
-  })
+  asyncHandler(deleteService)
 );
 
 /* ─── Staff & permissions ──────────────────────────────────────────────── */
@@ -408,3 +381,48 @@ router.post(
 );
 
 export default router;
+
+export async function createService(req, res) {
+    const b = req.body || {};
+    if (b.packageOnly !== undefined && typeof b.packageOnly !== 'boolean') throw ApiError.validation(['packageOnly']);
+    if (!b.name || !(Number.isSafeInteger(b.priceInPaise) && (b.packageOnly === true ? b.priceInPaise >= 0 : b.priceInPaise > 0)) || !(b.capacity > 0)) {
+      throw ApiError.validation(['name', 'priceInPaise', 'capacity']);
+    }
+    b.therapistName = await upsertServiceTherapistName(b);
+    const service = await Service.create({ ...b, kind: 'service', inclusions: [], includedServices: [] });
+    res.status(201).json({ service: serializeService(service) });
+}
+
+export async function updateService(req, res) {
+    const b = req.body || {};
+    if (b.packageOnly !== undefined && typeof b.packageOnly !== 'boolean') throw ApiError.validation(['packageOnly']);
+    const existing = await Service.findOne({ _id: req.params.id, kind: { $ne: 'package' } });
+    if (!existing) throw ApiError.notFound('Service not found.');
+    const price = b.priceInPaise ?? existing.priceInPaise;
+    if (!Number.isSafeInteger(price) || price < 0 || (!(b.packageOnly ?? existing.packageOnly) && price === 0)) throw ApiError.validation(['priceInPaise'], 'Individual services need a positive price.');
+    if (b.therapistId) b.therapistName = await upsertServiceTherapistName(b);
+    delete b.kind;
+    delete b.inclusions;
+    delete b.includedServices;
+    delete b.serviceIds;
+    const service = await Service.findOneAndUpdate({ _id: req.params.id, kind: { $ne: 'package' } }, { $set: b }, { new: true, runValidators: true });
+    if (!service) throw ApiError.notFound('Service not found.');
+    res.json({ service: serializeService(service) });
+}
+
+export async function deleteService(req, res) {
+    if (await Service.exists({ kind: 'package', 'includedServices.serviceId': req.params.id })) {
+      throw ApiError.conflict('service_in_package', 'This service belongs to a package. Remove it from all packages before deleting it, or deactivate it.');
+    }
+    const futureRef = await Booking.exists({
+      serviceId: req.params.id,
+      status: { $in: CAPACITY_STATUSES },
+      date: { $gte: new Date().toISOString().slice(0, 10) },
+    });
+    if (futureRef) {
+      throw ApiError.conflict('service_in_use', 'Future bookings reference this service — deactivate it instead.');
+    }
+    const del = await Service.findOneAndDelete({ _id: req.params.id, kind: { $ne: 'package' } });
+    if (!del) throw ApiError.notFound('Service not found.');
+    res.json({ deleted: true });
+}

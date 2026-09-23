@@ -2,6 +2,9 @@ import mongoose from 'mongoose';
 
 const serviceSchema = new mongoose.Schema(
   {
+    kind: { type: String, enum: ['service', 'package'], default: 'service', index: true },
+    visitCount: { type: Number, default: 1, min: 1, max: 365 },
+    inclusions: { type: [String], default: [] },
     name: { type: String, required: true, trim: true },
     category: { type: String, required: true, trim: true },
     blurb: { type: String, default: '' },

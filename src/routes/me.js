@@ -32,6 +32,8 @@ router.get(
         _id: b._id,
         reference: b.reference,
         serviceName: b.serviceSnapshot?.name,
+        packagePurchaseId: b.packagePurchaseId,
+        packageVisitCount: b.serviceSnapshot?.kind === 'package' ? b.serviceSnapshot.visitCount : 0,
         when: whenIso(b.date, b.startTime),
         date: b.date,
         startTime: b.startTime,
@@ -46,16 +48,18 @@ router.get(
 );
 
 // POST /me/bookings/:id/cancel — enforces the 12-hour rule server-side.
-router.post(
-  '/me/bookings/:id/cancel',
-  authenticate(),
-  requirePatient,
-  asyncHandler(async (req, res) => {
+export async function cancelBooking(req, res) {
     const booking = await Booking.findOne({ _id: req.params.id, patientId: req.auth.patient._id });
     if (!booking) throw ApiError.notFound('Booking not found.');
 
     if (new Date() > new Date(booking.cancellableUntil)) {
       throw ApiError.cancellationClosed(booking.cancellableUntil);
+    }
+
+    if (booking.serviceSnapshot?.kind === 'package' && !booking.packagePurchaseId && booking.serviceSnapshot.visitCount > 1) throw ApiError.conflict('package_cancellation', 'Please contact the centre to cancel a multi-visit package.');
+    if (booking.status === 'cancelled') {
+      if (booking.packagePurchaseId) await Booking.updateOne({ _id: booking.packagePurchaseId }, { $pull: { packageReservations: { bookingId: booking._id } } });
+      return res.json({ status: 'cancelled', refundInPaise: 0 });
     }
 
     let refundInPaise = 0;
@@ -71,9 +75,11 @@ router.post(
     booking.cancellation = { at: new Date(), refundInPaise };
     await booking.save();
 
+    if (booking.packagePurchaseId) await Booking.updateOne({ _id: booking.packagePurchaseId }, { $pull: { packageReservations: { bookingId: booking._id } } });
+
     res.json({ status: 'cancelled', refundInPaise, refundEtaDays: refundInPaise > 0 ? 5 : 0 });
-  })
-);
+}
+router.post('/me/bookings/:id/cancel', authenticate(), requirePatient, asyncHandler(cancelBooking));
 
 // POST /me/bookings/:id/reschedule — re-checks target capacity + 12h window.
 router.post(
@@ -91,6 +97,7 @@ router.post(
       throw ApiError.cancellationClosed(booking.cancellableUntil);
     }
 
+    if (booking.packagePurchaseId || booking.serviceSnapshot?.kind === 'package') throw ApiError.conflict('package_reschedule', 'For a package follow-up, cancel and book another day. Contact the centre to move the first visit.');
     const service = await Service.findById(booking.serviceId);
     const used = await countSlotUsage(service._id, date, startTime, { excludeBookingId: booking._id });
     if (used >= service.capacity) throw ApiError.slotUnavailable(0);

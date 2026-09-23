@@ -25,11 +25,16 @@ const bookingSchema = new mongoose.Schema(
     },
     serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service', required: true },
     serviceSnapshot: {
+      kind: String,
+      visitCount: { type: Number, default: 1 },
+      inclusions: [String],
       name: String,
       durationMin: Number,
       priceInPaise: Number,
       category: String,
     },
+    packagePurchaseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking', index: true },
+    packageReservations: [{ _id: false, bookingId: mongoose.Schema.Types.ObjectId, date: String }],
     date: { type: String, required: true, index: true }, // YYYY-MM-DD (centre-local)
     startTime: { type: String, required: true }, // HH:mm
     endTime: { type: String },

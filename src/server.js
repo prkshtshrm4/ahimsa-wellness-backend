@@ -8,6 +8,7 @@ import { isLive } from './utils/razorpay.js';
 
 import authRoutes from './routes/auth.js';
 import serviceRoutes from './routes/services.js';
+import packageRoutes from './routes/packages.js';
 import bookingRoutes from './routes/bookings.js';
 import meRoutes from './routes/me.js';
 import invoiceRoutes from './routes/invoices.js';
@@ -49,6 +50,7 @@ app.get('/health', (_req, res) =>
 const v1 = express.Router();
 v1.use(authRoutes);
 v1.use(serviceRoutes);
+v1.use(packageRoutes);
 v1.use(bookingRoutes);
 v1.use(meRoutes);
 v1.use(invoiceRoutes);

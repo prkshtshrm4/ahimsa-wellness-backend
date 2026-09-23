@@ -10,6 +10,9 @@ const router = Router();
 function serializeService(s) {
   return {
     _id: s._id,
+    kind: s.kind || 'service',
+    visitCount: s.visitCount || 1,
+    inclusions: s.inclusions || [],
     name: s.name,
     category: s.category,
     blurb: s.blurb,
@@ -36,6 +39,8 @@ router.get(
       req.auth.staff.grantedModules.includes('services.manage');
 
     const filter = includeInactive ? {} : { active: true };
+    if (req.query.kind === 'service') filter.kind = { $ne: 'package' };
+    if (req.query.kind === 'package') filter.kind = 'package';
     const services = await Service.find(filter).sort({ category: 1, name: 1 }).lean();
     res.json({ services: services.map(serializeService) });
   })

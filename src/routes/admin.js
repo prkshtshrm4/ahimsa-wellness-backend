@@ -14,6 +14,7 @@ import { createOrder, createPaymentLink, keyId } from '../utils/razorpay.js';
 import { ensureInvoiceForBooking, markInvoicePaid } from '../services/invoiceService.js';
 import { serializeService } from './services.js';
 import ApiError from '../utils/ApiError.js';
+import { validateVisitDate } from '../services/packageVisits.js';
 import { normalizePhone } from '../utils/phone.js';
 
 const router = Router();
@@ -114,7 +115,9 @@ router.post(
 
     if (!serviceId || !date || !startTime) throw ApiError.validation(['serviceId', 'date', 'startTime']);
     const service = await Service.findById(serviceId);
-    if (!service) throw ApiError.notFound('Service not found.');
+    if (!service || !service.active) throw ApiError.notFound('Service not found.');
+
+    if (service.kind === 'package') validateVisitDate(service, date, startTime);
 
     // Resolve patient (existing or quick-add).
     let patient = null;
@@ -153,6 +156,9 @@ router.post(
       patientSnapshot: { name: patient.name, phone: patient.phone, email: patient.email },
       serviceId: service._id,
       serviceSnapshot: {
+        kind: service.kind || 'service',
+        visitCount: service.visitCount || 1,
+        inclusions: service.inclusions || [],
         name: service.name,
         durationMin: service.durationMin,
         priceInPaise: service.priceInPaise,
@@ -279,7 +285,7 @@ router.post(
       throw ApiError.validation(['name', 'priceInPaise', 'capacity']);
     }
     b.therapistName = await upsertServiceTherapistName(b);
-    const service = await Service.create(b);
+    const service = await Service.create({ ...b, kind: 'service', inclusions: [] });
     res.status(201).json({ service: serializeService(service) });
   })
 );
@@ -291,7 +297,9 @@ router.patch(
   asyncHandler(async (req, res) => {
     const b = req.body || {};
     if (b.therapistId) b.therapistName = await upsertServiceTherapistName(b);
-    const service = await Service.findByIdAndUpdate(req.params.id, b, { new: true, runValidators: true });
+    delete b.kind;
+    delete b.inclusions;
+    const service = await Service.findOneAndUpdate({ _id: req.params.id, kind: { $ne: 'package' } }, { $set: b }, { new: true, runValidators: true });
     if (!service) throw ApiError.notFound('Service not found.');
     res.json({ service: serializeService(service) });
   })
@@ -310,7 +318,7 @@ router.delete(
     if (futureRef) {
       throw ApiError.conflict('service_in_use', 'Future bookings reference this service — deactivate it instead.');
     }
-    const del = await Service.findByIdAndDelete(req.params.id);
+    const del = await Service.findOneAndDelete({ _id: req.params.id, kind: { $ne: 'package' } });
     if (!del) throw ApiError.notFound('Service not found.');
     res.json({ deleted: true });
   })

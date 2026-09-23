@@ -12,6 +12,7 @@ import { cancellableUntil } from '../utils/datetime.js';
 import { createOrder, verifyCheckoutSignature, keyId } from '../utils/razorpay.js';
 import { ensureInvoiceForBooking, markInvoicePaid } from '../services/invoiceService.js';
 import ApiError from '../utils/ApiError.js';
+import { validateVisitDate } from '../services/packageVisits.js';
 
 const router = Router();
 
@@ -34,10 +35,7 @@ export function serializeBooking(b) {
 }
 
 // POST /bookings — create booking (+ Razorpay order for pay-now) in one call.
-router.post(
-  '/bookings',
-  optionalAuth,
-  asyncHandler(async (req, res) => {
+export async function createBooking(req, res) {
     const { serviceId, date, startTime, patientDetails, paymentMode = 'now', source = 'web' } = req.body || {};
 
     const missing = [];
@@ -48,6 +46,10 @@ router.post(
 
     const service = await Service.findById(serviceId);
     if (!service || !service.active) throw ApiError.notFound('Service not found.');
+
+    if (service.kind === 'package' && req.auth?.type !== 'patient') throw ApiError.unauthenticated('Please sign in to purchase a package and manage its visits.');
+
+    if (service.kind === 'package') validateVisitDate(service, date, startTime);
 
     // Resolve patient identity (linked account) or inline guest details.
     let patient = req.auth?.type === 'patient' ? req.auth.patient : null;
@@ -76,6 +78,9 @@ router.post(
       patientSnapshot: snapshot,
       serviceId: service._id,
       serviceSnapshot: {
+        kind: service.kind || 'service',
+        visitCount: service.visitCount || 1,
+        inclusions: service.inclusions || [],
         name: service.name,
         durationMin: service.durationMin,
         priceInPaise: service.priceInPaise,
@@ -123,8 +128,8 @@ router.post(
     }
 
     res.status(201).json(response);
-  })
-);
+}
+router.post('/bookings', optionalAuth, asyncHandler(createBooking));
 
 // POST /bookings/:id/payment/verify — confirm pay-now after checkout returns.
 router.post(
@@ -135,6 +140,11 @@ router.post(
     const booking = await Booking.findById(req.params.id);
     if (!booking) throw ApiError.notFound('Booking not found.');
 
+    const payment = await Payment.findOne({ bookingId: booking._id, razorpayOrderId });
+    if (!payment || payment.amountInPaise !== booking.amounts.totalInPaise || booking.status === 'cancelled') {
+      throw ApiError.paymentFailed('This payment order does not match the booking.');
+    }
+
     const ok = verifyCheckoutSignature({
       orderId: razorpayOrderId,
       paymentId: razorpayPaymentId,
@@ -144,7 +154,9 @@ router.post(
       throw ApiError.paymentFailed('Payment could not be verified — your slot is still held.');
     }
 
-    const payment = await Payment.findOne({ bookingId: booking._id, razorpayOrderId });
+    if (payment.status === 'paid' && booking.amounts.balanceInPaise === 0) {
+      return res.json({ booking: { _id: booking._id, status: booking.status, reference: booking.reference }, invoiceId: booking.invoiceId });
+    }
     if (payment) {
       payment.status = 'paid';
       payment.razorpayPaymentId = razorpayPaymentId;

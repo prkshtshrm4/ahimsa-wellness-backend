@@ -1,3 +1,4 @@
+import { validateVisitDate } from '../services/packageVisits.js';
 import { Router } from 'express';
 import { authenticate, requirePatient, requireModule } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/error.js';
@@ -99,6 +100,8 @@ router.post(
 
     if (booking.packagePurchaseId || booking.serviceSnapshot?.kind === 'package') throw ApiError.conflict('package_reschedule', 'For a package follow-up, cancel and book another day. Contact the centre to move the first visit.');
     const service = await Service.findById(booking.serviceId);
+    if (!service || !service.active || service.enquiryOnly || service.packageOnly) throw ApiError.conflict('contact_to_book', 'Contact the centre to reschedule this visit.');
+    validateVisitDate(service, date, startTime);
     const used = await countSlotUsage(service._id, date, startTime, { excludeBookingId: booking._id });
     if (used >= service.capacity) throw ApiError.slotUnavailable(0);
 

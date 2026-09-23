@@ -4,7 +4,7 @@ import ApiError from '../utils/ApiError.js';
 export function validatePackage(input, { partial = false } = {}) {
   const fields = [], result = {};
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw ApiError.validation(['body']);
-  const allowed = ['name', 'blurb', 'priceInPaise', 'durationMin', 'capacity', 'inclusions', 'active', 'visitCount', 'serviceIds'];
+  const allowed = ['name', 'blurb', 'priceInPaise', 'durationMin', 'capacity', 'inclusions', 'active', 'visitCount', 'serviceIds', 'enquiryOnly', 'priceLabel'];
   for (const key of Object.keys(input)) if (!allowed.includes(key)) fields.push(key);
   for (const [key, max] of [['name', 120], ['blurb', 1200]]) {
     if (partial && input[key] === undefined) continue;
@@ -25,6 +25,14 @@ export function validatePackage(input, { partial = false } = {}) {
   if (input.serviceIds !== undefined) {
     if (!Array.isArray(input.serviceIds) || input.serviceIds.length > 50 || input.serviceIds.some(id => typeof id !== 'string' || !/^[a-f\d]{24}$/i.test(id)) || new Set(input.serviceIds.map(id => String(id).toLowerCase())).size !== input.serviceIds.length) fields.push('serviceIds');
     else result.serviceIds = input.serviceIds;
+  }
+  if (input.priceLabel !== undefined) {
+    if (typeof input.priceLabel !== 'string' || input.priceLabel.length > 200) fields.push('priceLabel');
+    else result.priceLabel = input.priceLabel.trim();
+  }
+  if (input.enquiryOnly !== undefined) {
+    if (typeof input.enquiryOnly !== 'boolean') fields.push('enquiryOnly');
+    else result.enquiryOnly = input.enquiryOnly;
   }
   if (input.active !== undefined) {
     if (typeof input.active !== 'boolean') fields.push('active');

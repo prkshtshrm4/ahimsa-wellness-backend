@@ -1,0 +1,264 @@
+{
+  "source": "Scan documents20260921_174017.pdf",
+  "phone": "+919873124147",
+  "rows": [
+    {
+      "catalogueKey": "hydrotherapy",
+      "name": "Hydrotherapy – Baths & Packs",
+      "kind": "service",
+      "priceInPaise": 50000,
+      "category": "HYDRO & MUD THERAPY",
+      "aliases": [
+        "Hydrotherapy"
+      ],
+      "blurb": "Listed in the Ahimsa Wellness Centre printed brochure."
+    },
+    {
+      "catalogueKey": "enema",
+      "name": "Enema",
+      "kind": "service",
+      "priceInPaise": 75000,
+      "category": "HYDRO & MUD THERAPY",
+      "aliases": [],
+      "blurb": "Listed in the Ahimsa Wellness Centre printed brochure."
+    },
+    {
+      "catalogueKey": "colon-cleaning",
+      "name": "Colon Cleaning",
+      "kind": "service",
+      "priceInPaise": 250000,
+      "category": "HYDRO & MUD THERAPY",
+      "aliases": [],
+      "blurb": "Listed in the Ahimsa Wellness Centre printed brochure."
+    },
+    {
+      "catalogueKey": "mud-packs",
+      "name": "Mud Therapy Packs",
+      "kind": "service",
+      "priceInPaise": 50000,
+      "category": "HYDRO & MUD THERAPY",
+      "aliases": [
+        "Mud Therapy"
+      ],
+      "blurb": "Listed in the Ahimsa Wellness Centre printed brochure."
+    },
+    {
+      "catalogueKey": "steam",
+      "name": "Steam & Fomentation",
+      "kind": "service",
+      "priceInPaise": 50000,
+      "category": "HEAT & LIGHT",
+      "aliases": [],
+      "blurb": "Listed in the Ahimsa Wellness Centre printed brochure."
+    },
+    {
+      "catalogueKey": "full-body-massage",
+      "name": "Massage (Full Body)",
+      "kind": "service",
+      "priceInPaise": 150000,
+      "category": "BODY THERAPIES",
+      "aliases": [],
+      "blurb": "Listed in the Ahimsa Wellness Centre printed brochure."
+    },
+    {
+      "catalogueKey": "partial-massage",
+      "name": "Partial Massage",
+      "kind": "service",
+      "priceInPaise": 50000,
+      "category": "BODY THERAPIES",
+      "aliases": [],
+      "blurb": "Listed in the Ahimsa Wellness Centre printed brochure."
+    },
+    {
+      "catalogueKey": "magnetic-activation",
+      "name": "Magnetic Activation – Liver / Kidney",
+      "kind": "service",
+      "priceInPaise": 50000,
+      "category": "NATUROPATHY",
+      "aliases": [
+        "Magnetotherapy"
+      ],
+      "blurb": "Listed in the Ahimsa Wellness Centre printed brochure."
+    },
+    {
+      "catalogueKey": "helio-chromo",
+      "name": "Heliotherapy and Chromotherapy",
+      "kind": "service",
+      "priceInPaise": 50000,
+      "category": "HEAT & LIGHT",
+      "aliases": [
+        "Sun / Chromotherapy"
+      ],
+      "blurb": "Listed in the Ahimsa Wellness Centre printed brochure."
+    },
+    {
+      "catalogueKey": "acupuncture",
+      "name": "Acupuncture",
+      "kind": "service",
+      "priceInPaise": 75000,
+      "category": "NATUROPATHY",
+      "aliases": [],
+      "blurb": "Listed in the Ahimsa Wellness Centre printed brochure."
+    },
+    {
+      "catalogueKey": "acupressure",
+      "name": "Acupressure",
+      "kind": "service",
+      "priceInPaise": 30000,
+      "category": "NATUROPATHY",
+      "aliases": [],
+      "blurb": "Listed in the Ahimsa Wellness Centre printed brochure."
+    },
+    {
+      "catalogueKey": "shirodhara",
+      "name": "Shirodhara",
+      "kind": "service",
+      "priceInPaise": 150000,
+      "category": "BODY THERAPIES",
+      "aliases": [],
+      "blurb": "Two rates are printed in the brochure. Contact the centre to confirm the appropriate option.",
+      "priceLabel": "₹1,500 / ₹2,200",
+      "enquiryOnly": true
+    },
+    {
+      "catalogueKey": "herbal-plaster",
+      "name": "Herbal Plaster",
+      "kind": "service",
+      "priceInPaise": 25000,
+      "category": "BODY THERAPIES",
+      "aliases": [],
+      "blurb": "Two rates are printed in the brochure. Contact the centre to confirm the appropriate option.",
+      "priceLabel": "₹250 / ₹1,000",
+      "enquiryOnly": true
+    },
+    {
+      "catalogueKey": "first-consultation",
+      "name": "First Consultation",
+      "kind": "service",
+      "priceInPaise": 50000,
+      "category": "CONSULTATION",
+      "aliases": [
+        "OPD Consultation"
+      ],
+      "blurb": "Printed fee ₹1,500, inaugural discount ₹1,000, payable ₹500. Contact the centre to confirm the offer.",
+      "enquiryOnly": true,
+      "priceLabel": "₹500 introductory · regular ₹1,500"
+    },
+    {
+      "catalogueKey": "next-opd",
+      "name": "Next OPD – Treatment",
+      "kind": "service",
+      "priceInPaise": 50000,
+      "category": "CONSULTATION",
+      "aliases": [],
+      "blurb": "Any one therapy except Massage, Potli and Colon Hydrotherapy. The centre will confirm the eligible treatment.",
+      "enquiryOnly": true
+    },
+    {
+      "catalogueKey": "body-servicing-residential",
+      "name": "10 Days Body Servicing – Stay, Food & Treatment",
+      "kind": "package",
+      "priceInPaise": 6500000,
+      "visitCount": 10,
+      "category": "WELLNESS PACKAGES",
+      "aliases": [],
+      "inclusions": [
+        "Stay",
+        "Food",
+        "Treatment"
+      ],
+      "enquiryOnly": true,
+      "blurb": "Contact the centre to arrange your visits and confirm your treatment plan."
+    },
+    {
+      "catalogueKey": "body-servicing-treatment",
+      "name": "10 Days Body Servicing – Treatment Only",
+      "kind": "package",
+      "priceInPaise": 3000000,
+      "visitCount": 10,
+      "category": "WELLNESS PACKAGES",
+      "aliases": [],
+      "inclusions": [
+        "Treatment only"
+      ],
+      "enquiryOnly": true,
+      "blurb": "Contact the centre to arrange your visits and confirm your treatment plan."
+    },
+    {
+      "catalogueKey": "spondylosis",
+      "name": "Cervical & Lumbar Spondylosis – 5 Days",
+      "kind": "package",
+      "priceInPaise": 950000,
+      "visitCount": 5,
+      "category": "WELLNESS PACKAGES",
+      "aliases": [],
+      "inclusions": [
+        "Treatment only"
+      ],
+      "enquiryOnly": true,
+      "blurb": "Contact the centre to arrange your visits and confirm your treatment plan."
+    },
+    {
+      "catalogueKey": "detox",
+      "name": "2 Days Detox Program",
+      "kind": "package",
+      "priceInPaise": 1300000,
+      "visitCount": 2,
+      "category": "WELLNESS PACKAGES",
+      "aliases": [],
+      "inclusions": [
+        "Stay",
+        "Food",
+        "Treatment"
+      ],
+      "enquiryOnly": true,
+      "blurb": "Contact the centre to arrange your visits and confirm your treatment plan."
+    },
+    {
+      "catalogueKey": "day-care",
+      "name": "Day Care Package",
+      "kind": "package",
+      "priceInPaise": 250000,
+      "visitCount": 1,
+      "category": "WELLNESS PACKAGES",
+      "aliases": [],
+      "inclusions": [
+        "Stay",
+        "Food",
+        "Treatment",
+        "8 AM to 7 PM"
+      ],
+      "enquiryOnly": true,
+      "blurb": "₹2,500 per day, 8 AM to 7 PM. Stay, food and treatment included.",
+      "priceLabel": "₹2,500 per day"
+    },
+    {
+      "catalogueKey": "asthma",
+      "name": "10 Days Treatment Package for Asthma",
+      "kind": "package",
+      "priceInPaise": 2500000,
+      "visitCount": 10,
+      "category": "WELLNESS PACKAGES",
+      "aliases": [],
+      "inclusions": [
+        "OPD treatment"
+      ],
+      "enquiryOnly": true,
+      "blurb": "Contact the centre to arrange your visits and confirm your treatment plan."
+    },
+    {
+      "catalogueKey": "foot-detox",
+      "name": "Two Days Foot Detox",
+      "kind": "package",
+      "priceInPaise": 150000,
+      "visitCount": 2,
+      "category": "WELLNESS PACKAGES",
+      "aliases": [],
+      "inclusions": [
+        "Foot detox over two days"
+      ],
+      "enquiryOnly": true,
+      "blurb": "Contact the centre to arrange your visits and confirm your treatment plan."
+    }
+  ]
+}

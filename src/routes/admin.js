@@ -116,8 +116,9 @@ router.post(
     if (!serviceId || !date || !startTime) throw ApiError.validation(['serviceId', 'date', 'startTime']);
     const service = await Service.findById(serviceId);
     if (!service || !service.active || service.packageOnly) throw ApiError.notFound('Service not found.');
+    if (service.enquiryOnly) throw ApiError.conflict('contact_to_book', 'Please call +91 98731 24147 to confirm this treatment and arrange your visit.');
 
-    if (service.kind === 'package') validateVisitDate(service, date, startTime);
+    validateVisitDate(service, date, startTime);
 
     // Resolve patient (existing or quick-add).
     let patient = null;
@@ -384,6 +385,8 @@ export default router;
 
 export async function createService(req, res) {
     const b = req.body || {};
+    if (b.enquiryOnly !== undefined && typeof b.enquiryOnly !== 'boolean') throw ApiError.validation(['enquiryOnly']);
+    if (b.priceLabel !== undefined && (typeof b.priceLabel !== 'string' || b.priceLabel.length > 200)) throw ApiError.validation(['priceLabel']);
     if (b.packageOnly !== undefined && typeof b.packageOnly !== 'boolean') throw ApiError.validation(['packageOnly']);
     if (!b.name || !(Number.isSafeInteger(b.priceInPaise) && (b.packageOnly === true ? b.priceInPaise >= 0 : b.priceInPaise > 0)) || !(b.capacity > 0)) {
       throw ApiError.validation(['name', 'priceInPaise', 'capacity']);
@@ -395,6 +398,8 @@ export async function createService(req, res) {
 
 export async function updateService(req, res) {
     const b = req.body || {};
+    if (b.enquiryOnly !== undefined && typeof b.enquiryOnly !== 'boolean') throw ApiError.validation(['enquiryOnly']);
+    if (b.priceLabel !== undefined && (typeof b.priceLabel !== 'string' || b.priceLabel.length > 200)) throw ApiError.validation(['priceLabel']);
     if (b.packageOnly !== undefined && typeof b.packageOnly !== 'boolean') throw ApiError.validation(['packageOnly']);
     const existing = await Service.findOne({ _id: req.params.id, kind: { $ne: 'package' } });
     if (!existing) throw ApiError.notFound('Service not found.');

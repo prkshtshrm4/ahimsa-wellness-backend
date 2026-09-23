@@ -46,10 +46,11 @@ export async function createBooking(req, res) {
 
     const service = await Service.findById(serviceId);
     if (!service || !service.active || service.packageOnly) throw ApiError.notFound('Service not found.');
+    if (service.enquiryOnly) throw ApiError.conflict('contact_to_book', 'Please call +91 98731 24147 to confirm this treatment and arrange your visit.');
 
     if (service.kind === 'package' && req.auth?.type !== 'patient') throw ApiError.unauthenticated('Please sign in to purchase a package and manage its visits.');
 
-    if (service.kind === 'package') validateVisitDate(service, date, startTime);
+    validateVisitDate(service, date, startTime);
 
     // Resolve patient identity (linked account) or inline guest details.
     let patient = req.auth?.type === 'patient' ? req.auth.patient : null;

@@ -10,6 +10,8 @@ const router = Router();
 function serializeService(s) {
   return {
     _id: s._id,
+    enquiryOnly: s.enquiryOnly === true,
+    priceLabel: s.priceLabel || '',
     kind: s.kind || 'service',
     visitCount: s.visitCount || 1,
     inclusions: s.inclusions || [],
@@ -66,6 +68,7 @@ export async function serviceAvailability(req, res) {
     }
     const service = await Service.findById(req.params.serviceId);
     if (!service || !service.active || service.packageOnly) throw ApiError.notFound('Service not found.');
+    if (service.enquiryOnly) throw ApiError.conflict('contact_to_book', 'Please call +91 98731 24147 to confirm this treatment and arrange your visit.');
 
     const slots = await computeAvailability(service, date);
     res.json({ serviceId: service._id, date, capacity: service.capacity, slots });

@@ -188,3 +188,29 @@ test('purchase and included visits retain selected services after catalogue edit
   assert.equal(stored.serviceSnapshot.includedServices[0].name, 'Original yoga');
   assert.equal(String(stored.serviceSnapshot.includedServices[0].serviceId), service.id);
 });
+
+test('brochure hours exclude breaks and use consultation-specific windows', async () => {
+  const { buildSlotTimes } = await import('../src/utils/slots.js');
+  const treatment = buildSlotTimes({ durationMin: 60 });
+  assert.equal(treatment[0], '08:00');
+  assert.ok(treatment.includes('16:00'));
+  assert.ok(!treatment.includes('13:00'));
+  assert.ok(!treatment.includes('15:00'));
+  assert.equal(treatment.at(-1), '18:00');
+  assert.deepEqual(buildSlotTimes({ durationMin: 60, category: 'CONSULTATION' }), ['11:00', '12:00', '17:00', '18:00']);
+});
+
+test('contact-to-book offerings are visible but cannot create appointments or expose slots', async () => {
+  const service = await Service.create({ ...payload, category: 'BODY THERAPIES', enquiryOnly: true, priceLabel: '₹1,500 / ₹2,200' });
+  const listed = await request(app).get('/services').expect(200);
+  assert.equal(listed.body.services[0].enquiryOnly, true);
+  assert.equal(listed.body.services[0].priceLabel, '₹1,500 / ₹2,200');
+  await request(app).get(`/services/${service.id}/availability?date=2035-01-01`).expect(409);
+  await patient(request(app).post('/bookings')).send({ serviceId: service.id, date: '2035-01-01', startTime: '09:00', paymentMode: 'atVisit' }).expect(409);
+  assert.equal(await Booking.countDocuments(), 0);
+});
+
+test('individual booking rejects appointment times during the printed lunch break', async () => {
+  const service = await Service.create({ ...payload, category: 'NATUROPATHY' });
+  await patient(request(app).post('/bookings')).send({ serviceId: service.id, date: '2035-01-01', startTime: '14:00', paymentMode: 'atVisit' }).expect(422);
+});

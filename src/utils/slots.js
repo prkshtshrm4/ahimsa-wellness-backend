@@ -1,8 +1,9 @@
 import Booking, { CAPACITY_STATUSES } from '../models/Booking.js';
+import { whenIso } from './datetime.js';
 
 // Centre hours (local). First slot starts at OPEN, last must end by CLOSE.
-const OPEN_MIN = 9 * 60; // 09:00
-const CLOSE_MIN = 19 * 60; // 19:00
+const TREATMENT_WINDOWS = [[8 * 60, 13 * 60], [16 * 60, 19 * 60]];
+const CONSULTATION_WINDOWS = [[11 * 60, 13 * 60], [17 * 60, 19 * 60]];
 
 const toMin = (hhmm) => {
   const [h, m] = hhmm.split(':').map(Number);
@@ -23,8 +24,9 @@ export function endTimeFor(startTime, durationMin) {
 export function buildSlotTimes(service) {
   const step = slotStep(service.durationMin);
   const times = [];
-  for (let t = OPEN_MIN; t + service.durationMin <= CLOSE_MIN; t += step) {
-    times.push(toHHMM(t));
+  const windows = service.category === 'CONSULTATION' ? CONSULTATION_WINDOWS : TREATMENT_WINDOWS;
+  for (const [open, close] of windows) {
+    for (let t = open; t + service.durationMin <= close; t += step) times.push(toHHMM(t));
   }
   return times;
 }
@@ -49,7 +51,7 @@ export async function computeAvailability(service, date, { excludeBookingId } = 
   const counts = new Map();
   for (const b of bookings) counts.set(b.startTime, (counts.get(b.startTime) || 0) + 1);
 
-  return times.map((startTime) => {
+  return times.filter(startTime => new Date(whenIso(date, startTime)) > now).map((startTime) => {
     const used = counts.get(startTime) || 0;
     const remaining = Math.max(0, service.capacity - used);
     return { startTime, endTime: endTimeFor(startTime, service.durationMin), remaining };

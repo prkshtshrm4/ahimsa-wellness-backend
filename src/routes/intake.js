@@ -5,6 +5,7 @@ import CaseSheet from '../models/CaseSheet.js';
 import Staff from '../models/Staff.js';
 import { nextPatientNo } from '../models/Counter.js';
 import { normalizePhone } from '../utils/phone.js';
+import { sendIntakeAckSms } from '../utils/msg91.js';
 import ApiError from '../utils/ApiError.js';
 
 const router = Router();
@@ -152,6 +153,19 @@ router.post(
       status: 'submitted',
     });
 
+    // Fire-and-forget acknowledgement SMS (does not block registration).
+    let sms = { skipped: true };
+    try {
+      sms = await sendIntakeAckSms({
+        phone: sheet.phone,
+        name: sheet.name,
+        patientNo: sheet.patientNo,
+      });
+    } catch (err) {
+      console.error('Intake SMS unexpected error:', err.message);
+      sms = { ok: false, error: err.message };
+    }
+
     res.status(201).json({
       ok: true,
       caseSheet: {
@@ -159,6 +173,10 @@ router.post(
         patientNo: sheet.patientNo,
         name: sheet.name,
         createdAt: sheet.createdAt,
+      },
+      sms: {
+        sent: Boolean(sms?.ok),
+        skipped: Boolean(sms?.skipped),
       },
     });
   })

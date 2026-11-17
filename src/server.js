@@ -44,6 +44,7 @@ app.get('/health', (_req, res) =>
     service: 'ahimsa-wellness-api',
     authMode: env.authMode,
     razorpay: isLive ? 'live' : 'mock',
+    msg91: Boolean(env.msg91?.authKey && env.msg91?.flowId && env.msg91?.senderId) ? 'configured' : 'off',
     time: new Date().toISOString(),
   })
 );

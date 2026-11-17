@@ -16,6 +16,11 @@ const env = {
     keySecret: process.env.RAZORPAY_KEY_SECRET || '',
     webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
   },
+  msg91: {
+    authKey: process.env.MSG91_AUTH_KEY || '',
+    flowId: process.env.MSG91_FLOW_ID || '',
+    senderId: (process.env.MSG91_SENDER_ID || '').toUpperCase().slice(0, 6),
+  },
 };
 
 env.allowedOrigins = buildAllowedOrigins(env.clientOrigin);

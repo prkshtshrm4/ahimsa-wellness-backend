@@ -11,7 +11,27 @@ export const MODULE_KEYS = [
   'invoices.read',
   'schedule.own',
   'reports.read',
+  'cases.manage',
 ];
+
+/** Suggested modules when inviting with a named role preset. */
+export const ROLE_PRESETS = {
+  Doctor: {
+    role: 'Doctor',
+    isTherapist: true,
+    grantedModules: ['cases.manage', 'bookings.read', 'schedule.own', 'invoices.read'],
+  },
+  Receptionist: {
+    role: 'Receptionist',
+    isTherapist: false,
+    grantedModules: ['bookings.read', 'bookings.create', 'bookings.manage', 'payments.collect', 'payments.link'],
+  },
+  Therapist: {
+    role: 'Therapist',
+    isTherapist: true,
+    grantedModules: ['schedule.own', 'bookings.read'],
+  },
+};
 
 const staffSchema = new mongoose.Schema(
   {

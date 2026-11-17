@@ -18,4 +18,15 @@ export async function nextReference(year = new Date().getFullYear()) {
   return `AWC-${year}-${String(doc.seq).padStart(4, '0')}`;
 }
 
+/** Human-friendly case sheet patient numbers: AWC-CS-2026-0001 */
+export async function nextPatientNo(year = new Date().getFullYear()) {
+  const key = `casesheet-${year}`;
+  const doc = await Counter.findByIdAndUpdate(
+    key,
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true }
+  );
+  return `AWC-CS-${year}-${String(doc.seq).padStart(4, '0')}`;
+}
+
 export default Counter;

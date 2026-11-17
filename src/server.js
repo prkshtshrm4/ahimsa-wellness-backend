@@ -13,6 +13,7 @@ import bookingRoutes from './routes/bookings.js';
 import meRoutes from './routes/me.js';
 import invoiceRoutes from './routes/invoices.js';
 import adminRoutes from './routes/admin.js';
+import intakeRoutes from './routes/intake.js';
 import webhookRoutes from './routes/webhooks.js';
 
 const app = express();
@@ -55,6 +56,7 @@ v1.use(bookingRoutes);
 v1.use(meRoutes);
 v1.use(invoiceRoutes);
 v1.use(adminRoutes);
+v1.use(intakeRoutes);
 v1.use(webhookRoutes);
 app.use('/v1', v1);
 

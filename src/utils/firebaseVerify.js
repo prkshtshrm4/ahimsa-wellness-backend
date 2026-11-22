@@ -17,6 +17,7 @@ export async function verifyFirebaseToken(idToken) {
   const { payload } = await jwtVerify(idToken, JWKS, {
     issuer,
     audience: env.firebaseProjectId,
+    clockTolerance: 60,
   });
   return {
     uid: payload.user_id || payload.sub,

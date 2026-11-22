@@ -281,7 +281,7 @@ router.patch(
 router.get(
   '/admin/doctors',
   authenticate(),
-  requireModule('cases.manage'),
+  requireAnyModule('intake.read', 'cases.manage'),
   asyncHandler(async (_req, res) => {
     const doctors = await Staff.find({
       active: true,

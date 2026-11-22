@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import { authenticate, requireModule, requireAnyModule } from '../middleware/auth.js';
+import { createdAtFilter } from '../utils/dateRange.js';
+import { sendCsv } from '../utils/csv.js';
 import { asyncHandler } from '../middleware/error.js';
 import CaseSheet from '../models/CaseSheet.js';
 import Staff from '../models/Staff.js';
@@ -184,30 +186,75 @@ router.post(
 
 /* ─── Staff: list / view / update case sheets ──────────────────────────── */
 
+function buildCaseFilter(req) {
+  const q = (req.query.q || '').trim();
+  const status = (req.query.status || '').trim();
+  const filter = { ...createdAtFilter(req.query.from, req.query.to) };
+  if (status && ['submitted', 'reviewed', 'closed'].includes(status)) filter.status = status;
+  if (q) {
+    const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    filter.$or = [{ name: re }, { phone: re }, { patientNo: re }];
+  }
+  return filter;
+}
+
 router.get(
   '/admin/cases',
   authenticate(),
   requireAnyModule('intake.read', 'cases.manage'),
   asyncHandler(async (req, res) => {
-    const q = (req.query.q || '').trim();
-    const status = (req.query.status || '').trim();
-    const filter = {};
-    if (status && ['submitted', 'reviewed', 'closed'].includes(status)) filter.status = status;
-    if (q) {
-      filter.$or = [
-        { name: new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
-        { phone: new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
-        { patientNo: new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') },
-      ];
-    }
+    const filter = buildCaseFilter(req);
+    const limit = Math.min(2000, Math.max(1, Number(req.query.limit) || 80));
     const rows = await CaseSheet.find(filter)
       .sort({ createdAt: -1 })
-      .limit(80)
+      .limit(limit)
       .select('-consentSignatureDataUrl')
       .lean();
     res.json({
       cases: rows.map((r) => serializeCase(r, { clinical: true })),
+      total: rows.length,
     });
+  })
+);
+
+router.get(
+  '/admin/cases/export',
+  authenticate(),
+  requireAnyModule('intake.export'),
+  asyncHandler(async (req, res) => {
+    const filter = buildCaseFilter(req);
+    const rows = await CaseSheet.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(5000)
+      .select('-consentSignatureDataUrl')
+      .lean();
+    const from = String(req.query.from || 'all');
+    const to = String(req.query.to || 'all');
+    const headers = [
+      'Date',
+      'Patient No',
+      'Name',
+      'Phone',
+      'Age',
+      'Gender',
+      'Status',
+      'Complaint physical',
+      'Complaint mental',
+      'Assigned doctor',
+    ];
+    const data = rows.map((r) => ({
+      Date: new Date(r.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+      'Patient No': r.patientNo || '',
+      Name: r.name || '',
+      Phone: r.phone || '',
+      Age: r.age ?? '',
+      Gender: r.gender || '',
+      Status: r.status || '',
+      'Complaint physical': r.complaintPhysical || '',
+      'Complaint mental': r.complaintMental || '',
+      'Assigned doctor': r.assignedDoctorName || '',
+    }));
+    sendCsv(res, `intake-cases_${from}_to_${to}.csv`, headers, data);
   })
 );
 

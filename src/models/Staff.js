@@ -12,6 +12,8 @@ export const MODULE_KEYS = [
   'schedule.own',
   'reports.read',
   'cases.manage',
+  'intake.read',
+  'yoga.read',
 ];
 
 /** Suggested modules when inviting with a named role preset. */
@@ -19,12 +21,12 @@ export const ROLE_PRESETS = {
   Doctor: {
     role: 'Doctor',
     isTherapist: true,
-    grantedModules: ['cases.manage', 'bookings.read', 'schedule.own', 'invoices.read'],
+    grantedModules: ['cases.manage', 'intake.read', 'bookings.read', 'schedule.own', 'invoices.read'],
   },
   Receptionist: {
     role: 'Receptionist',
     isTherapist: false,
-    grantedModules: ['bookings.read', 'bookings.create', 'bookings.manage', 'payments.collect', 'payments.link'],
+    grantedModules: ['bookings.read', 'bookings.create', 'bookings.manage', 'payments.collect', 'payments.link', 'yoga.read'],
   },
   Therapist: {
     role: 'Therapist',

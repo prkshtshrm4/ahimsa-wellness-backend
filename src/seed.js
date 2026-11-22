@@ -32,7 +32,7 @@ async function run() {
     grantedModules: [
       'bookings.read', 'bookings.create', 'bookings.manage', 'services.manage',
       'staff.manage', 'payments.collect', 'payments.link', 'invoices.read',
-      'schedule.own', 'reports.read', 'cases.manage',
+      'schedule.own', 'reports.read', 'cases.manage', 'intake.read', 'yoga.read',
     ],
   });
 

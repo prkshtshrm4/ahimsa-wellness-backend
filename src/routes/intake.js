@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate, requireModule } from '../middleware/auth.js';
+import { authenticate, requireModule, requireAnyModule } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/error.js';
 import CaseSheet from '../models/CaseSheet.js';
 import Staff from '../models/Staff.js';
@@ -187,7 +187,7 @@ router.post(
 router.get(
   '/admin/cases',
   authenticate(),
-  requireModule('cases.manage'),
+  requireAnyModule('intake.read', 'cases.manage'),
   asyncHandler(async (req, res) => {
     const q = (req.query.q || '').trim();
     const status = (req.query.status || '').trim();
@@ -214,7 +214,7 @@ router.get(
 router.get(
   '/admin/cases/:id',
   authenticate(),
-  requireModule('cases.manage'),
+  requireAnyModule('intake.read', 'cases.manage'),
   asyncHandler(async (req, res) => {
     const sheet = await CaseSheet.findById(req.params.id).lean();
     if (!sheet) throw ApiError.notFound('Case sheet not found.');

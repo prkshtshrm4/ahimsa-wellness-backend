@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate, requireModule } from '../middleware/auth.js';
+import { authenticate, requireAnyModule } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/error.js';
 import YogaRegistration, { YOGA_GENDERS, YOGA_SLOTS } from '../models/YogaRegistration.js';
 import ApiError from '../utils/ApiError.js';
@@ -59,7 +59,7 @@ router.post(
 router.get(
   '/admin/yoga-registrations',
   authenticate(),
-  requireModule('cases.manage'),
+  requireAnyModule('yoga.read', 'cases.manage'),
   asyncHandler(async (req, res) => {
     const q = String(req.query.q || '').trim();
     const filter = {};

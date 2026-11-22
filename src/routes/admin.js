@@ -328,15 +328,15 @@ router.patch(
   authenticate(),
   requireModule('staff.manage'),
   asyncHandler(async (req, res) => {
-    const { grantedModules, name, role, isTherapist, active } = req.body || {};
+    const { grantedModules, name, role, isTherapist, active, email, phone } = req.body || {};
+    const target = await Staff.findById(req.params.id);
+    if (!target) throw ApiError.notFound('Staff not found.');
 
     if (grantedModules) {
       const invalid = grantedModules.filter((k) => !MODULE_KEYS.includes(k));
       if (invalid.length) throw ApiError.validation(['grantedModules'], `Unknown modules: ${invalid.join(', ')}`);
 
       // Guardrail: never strip staff.manage from the last remaining admin.
-      const target = await Staff.findById(req.params.id);
-      if (!target) throw ApiError.notFound('Staff not found.');
       if (target.grantedModules.includes('staff.manage') && !grantedModules.includes('staff.manage')) {
         const admins = await Staff.countDocuments({ grantedModules: 'staff.manage', active: true });
         if (admins <= 1) throw ApiError.conflict('last_admin', 'You cannot remove the last remaining admin.');
@@ -345,10 +345,36 @@ router.patch(
 
     const update = {};
     if (grantedModules) update.grantedModules = grantedModules;
-    if (name !== undefined) update.name = name;
-    if (role !== undefined) update.role = role;
-    if (isTherapist !== undefined) update.isTherapist = isTherapist;
-    if (active !== undefined) update.active = active;
+    if (name !== undefined) {
+      const nextName = String(name || '').trim().slice(0, 120);
+      if (!nextName) throw ApiError.validation(['name'], 'Name is required.');
+      update.name = nextName;
+    }
+    if (role !== undefined) update.role = String(role || 'Staff').trim().slice(0, 80) || 'Staff';
+    if (isTherapist !== undefined) update.isTherapist = Boolean(isTherapist);
+    if (active !== undefined) update.active = Boolean(active);
+
+    if (email !== undefined) {
+      const nextEmail = String(email || '').trim().toLowerCase();
+      if (!nextEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) {
+        throw ApiError.validation(['email'], 'A valid email is required.');
+      }
+      const emailTaken = await Staff.findOne({ email: nextEmail, _id: { $ne: target._id } });
+      if (emailTaken) throw ApiError.conflict('staff_exists', 'Another staff member already uses that email.');
+      update.email = nextEmail;
+    }
+
+    if (phone !== undefined) {
+      const nextPhone = normalizePhone(phone);
+      if (!nextPhone || nextPhone.replace(/\D/g, '').length < 12) {
+        throw ApiError.validation(['phone'], 'A valid mobile number is required.');
+      }
+      const phoneTaken = await Staff.findOne({ phone: nextPhone, _id: { $ne: target._id } });
+      if (phoneTaken) throw ApiError.conflict('staff_exists', 'Another staff member already uses that mobile number.');
+      update.phone = nextPhone;
+      // Force re-link on next Firebase sign-in if the login number changed.
+      if (nextPhone !== target.phone) update.firebaseUid = null;
+    }
 
     const staff = await Staff.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
     if (!staff) throw ApiError.notFound('Staff not found.');

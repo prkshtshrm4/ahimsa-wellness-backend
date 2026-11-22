@@ -126,12 +126,19 @@ export function requirePatient(req, _res, next) {
 }
 
 export function requireModule(key) {
+  return requireAnyModule(key);
+}
+
+/** Staff must have at least one of the listed modules. */
+export function requireAnyModule(...keys) {
+  const list = keys.flat().filter(Boolean);
   return (req, _res, next) => {
     if (req.auth?.type !== 'staff') {
-      return next(ApiError.forbidden(key, 'Staff access required.'));
+      return next(ApiError.forbidden(list[0] || null, 'Staff access required.'));
     }
-    if (!req.auth.staff.grantedModules.includes(key)) {
-      return next(ApiError.forbidden(key));
+    const granted = req.auth.staff.grantedModules || [];
+    if (!list.some((key) => granted.includes(key))) {
+      return next(ApiError.forbidden(list[0] || null));
     }
     next();
   };
